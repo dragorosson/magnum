@@ -46,7 +46,8 @@ class TestBayConductorWithSwarm(base.TestCase):
             'network_driver': 'network_driver',
             'labels': {'flannel_network_cidr': '10.101.0.0/16',
                        'flannel_network_subnetlen': '26',
-                       'flannel_backend': 'vxlan'}
+                       'flannel_backend': 'vxlan'},
+            'master_lb_enabled': False,
         }
         self.bay_dict = {
             'id': 1,
@@ -126,7 +127,7 @@ class TestBayConductorWithSwarm(base.TestCase):
             'auth_url': 'http://192.168.10.10:5000/v3'
         }
         self.assertEqual(expected, definition)
-        self.assertEqual([], env_files)
+        self.assertEqual(['environments/no_master_lb.yaml'], env_files)
 
     @patch('requests.get')
     @patch('magnum.objects.BayModel.get_by_uuid')
@@ -186,7 +187,7 @@ class TestBayConductorWithSwarm(base.TestCase):
             'docker_storage_driver': 'devicemapper'
         }
         self.assertEqual(expected, definition)
-        self.assertEqual([], env_files)
+        self.assertEqual(['environments/no_master_lb.yaml'], env_files)
 
     @patch('requests.get')
     @patch('magnum.objects.BayModel.get_by_uuid')
@@ -238,7 +239,7 @@ class TestBayConductorWithSwarm(base.TestCase):
             'auth_url': 'http://192.168.10.10:5000/v3'
         }
         self.assertEqual(expected, definition)
-        self.assertEqual([], env_files)
+        self.assertEqual(['environments/no_master_lb.yaml'], env_files)
 
     @patch('magnum.conductor.utils.retrieve_baymodel')
     @patch('oslo_config.cfg')
