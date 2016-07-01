@@ -45,7 +45,8 @@ class TestBayConductorWithMesos(base.TestCase):
                        'mesos_slave_image_providers': 'docker',
                        'mesos_slave_executor_env_variables': '{}',
                        'mesos_slave_work_dir': '/tmp/mesos/slave'
-                       }
+                       },
+            'master_lb_enabled': False,
         }
         self.bay_dict = {
             'id': 1,
@@ -120,7 +121,7 @@ class TestBayConductorWithMesos(base.TestCase):
             'mesos_slave_image_providers': 'docker'
         }
         self.assertEqual(expected, definition)
-        self.assertEqual([], env_files)
+        self.assertEqual(['environments/no_master_lb.yaml'], env_files)
 
     @patch('magnum.objects.BayModel.get_by_uuid')
     def test_extract_template_definition_only_required(
@@ -164,7 +165,7 @@ class TestBayConductorWithMesos(base.TestCase):
             'mesos_slave_image_providers': 'docker'
         }
         self.assertEqual(expected, definition)
-        self.assertEqual([], env_files)
+        self.assertEqual(['environments/no_master_lb.yaml'], env_files)
 
     @patch('magnum.conductor.utils.retrieve_baymodel')
     @patch('oslo_config.cfg')
