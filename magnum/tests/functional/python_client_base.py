@@ -191,7 +191,8 @@ class BaseMagnumClient(base.BaseMagnumTest):
         try:
             cls._wait_on_status(
                 cls.cluster,
-                ["CREATE_COMPLETE", "DELETE_IN_PROGRESS", "CREATE_FAILED"],
+                ["CREATE_COMPLETE", "DELETE_IN_PROGRESS", "CREATE_FAILED",
+                 "UPDATE_FAILED"],
                 ["DELETE_FAILED", "DELETE_COMPLETE"],
                 timeout=600
             )
@@ -209,7 +210,7 @@ class BaseMagnumClient(base.BaseMagnumTest):
         self._wait_on_status(
             cluster,
             [None, "CREATE_IN_PROGRESS"],
-            ["CREATE_FAILED", "CREATE_COMPLETE"],
+            ["CREATE_FAILED", "CREATE_COMPLETE", "UPDATE_COMPLETE"],
             timeout=self.cluster_complete_timeout
         )
 
@@ -472,3 +473,31 @@ class BaseK8sTest(ClusterTest):
 
         resp = self.k8s_api.delete_namespaced_replication_controller(
             name='frontend', body={}, namespace='default')
+
+    def test_restart(self):
+        pod_manifest = {'apiVersion': 'v1',
+                        'kind': 'Pod',
+                        'metadata': {'color': 'blue', 'name': 'test'},
+                        'spec': {'containers': [{'image': 'dockerfile/redis',
+                                 'name': 'redis'}]}}
+
+        resp = self.k8s_api.create_namespaced_pod(body=pod_manifest,
+                                                  namespace='default')
+
+        self.assertEqual('test', resp.metadata.name)
+        self.assertTrue(resp.status.phase)
+
+        self.cs.clusters.restart(self.cluster.uuid)
+
+        self._wait_on_status(self.cluster,
+                             ["CREATE_COMPLETE", "UPDATE_IN_PROGRESS"],
+                             ["UPDATE_COMPLETE"],
+                             timeout=1200)
+
+        resp = self.k8s_api.read_namespaced_pod(name='test',
+                                                namespace='default')
+        self.assertEqual('test', resp.metadata.name)
+        self.assertTrue(resp.status.phase)
+
+        resp = self.k8s_api.delete_namespaced_pod(name='test', body={},
+                                                  namespace='default')

@@ -261,7 +261,11 @@ function magnum_register_image {
         magnum_image_property=$magnum_image_property"coreos"
     fi
     # os_distro property for fedora ironic image
-    local fedora_ironic="$(echo $MAGNUM_GUEST_IMAGE_URL | grep -i "ironic" \
+
+    # Temp fix just so the cern image url doesn't trigger this ironic codepath
+    # TODO remove this once we're not setting the image in this patch
+    local fedora_ironic="$(echo $MAGNUM_GUEST_IMAGE_URL | grep -v "test-fedora-23-ironic-image" \
+                                                        | grep -i "ironic" \
                                                         | grep -io "fedora" || true;)"
     if [ ! -z "$fedora_ironic" ]; then
         magnum_image_property=$magnum_image_property"fedora"

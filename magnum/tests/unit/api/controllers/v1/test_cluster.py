@@ -794,6 +794,35 @@ class TestDelete(api_base.FunctionalTest):
         self.assertTrue(response.json['errors'])
 
 
+class TestRestart(api_base.FunctionalTest):
+    def setUp(self):
+        super(TestRestart, self).setUp()
+        self.cluster_template = obj_utils.create_test_cluster_template(
+            self.context)
+        self.cluster = obj_utils.create_test_cluster(self.context)
+        p = mock.patch.object(rpcapi.API, 'cluster_restart')
+        self.mock_restart = p.start()
+        self.addCleanup(p.stop)
+
+    def test_restart_cluster(self):
+        response = self.patch_req('/clusters/%s/actions/restart' %
+                                  self.cluster.uuid)
+        self.assertEqual(204, response.status_int)
+        self.mock_restart.assert_called_once_with(self.cluster.uuid)
+
+    def test_restart_cluster_name(self):
+        response = self.patch_req('/clusters/%s/actions/restart' %
+                                  self.cluster.uuid)
+        self.assertEqual(204, response.status_int)
+        self.mock_restart.assert_called_once_with(self.cluster.uuid)
+
+    def test_restart_cluster_not_found(self):
+        response = self.patch_req('/clusters/%s/actions/restart' %
+                                  'not_found', expect_errors=True)
+        self.assertEqual(404, response.status_int)
+        self.mock_restart.assert_not_called()
+
+
 class TestClusterPolicyEnforcement(api_base.FunctionalTest):
     def setUp(self):
         super(TestClusterPolicyEnforcement, self).setUp()

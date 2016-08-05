@@ -168,6 +168,29 @@ class FunctionalTest(base.DbTestCase):
                                   headers=headers, extra_environ=extra_environ,
                                   status=status, method="patch")
 
+    def patch_req(self, path, expect_errors=False, headers=None,
+                  extra_environ=None, status=None, path_prefix=PATH_PREFIX):
+        """Sends simulated HTTP PATCH request to Pecan test app.
+
+        :param path: url path of target service
+        :param expect_errors: Boolean value; whether an error is expected based
+                              on request
+        :param headers: a dictionary of headers to send along with the request
+        :param extra_environ: a dictionary of environ variables to send along
+                              with the request
+        :param status: expected status code of response
+        :param path_prefix: prefix of the url path
+        """
+        full_path = path_prefix + path
+        print('PATCH: %s' % (full_path))
+        response = self.app.patch(str(full_path),
+                                  headers=headers,
+                                  status=status,
+                                  extra_environ=extra_environ,
+                                  expect_errors=expect_errors)
+        print('GOT:%s' % response)
+        return response
+
     def delete(self, path, expect_errors=False, headers=None,
                extra_environ=None, status=None, path_prefix=PATH_PREFIX):
         """Sends simulated HTTP DELETE request to Pecan test app.

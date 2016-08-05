@@ -97,6 +97,12 @@ class RPCAPITestCase(base.DbTestCase):
                           version='1.1',
                           cluster=self.fake_cluster['name'])
 
+    def test_cluster_restart(self):
+        self._test_rpcapi('cluster_restart',
+                          'call',
+                          version='1.0',
+                          uuid=self.fake_cluster['uuid'])
+
     def test_ping_conductor(self):
         self._test_rpcapi('ping_conductor',
                           'call',

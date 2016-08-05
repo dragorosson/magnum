@@ -13,6 +13,7 @@
 # under the License.
 
 import os
+import uuid
 
 from heatclient.common import template_utils
 from heatclient import exc
@@ -240,6 +241,43 @@ class Handler(object):
         self._poll_and_check(osc, cluster)
 
         return None
+
+    def cluster_restart(self, context, cluster_uuid):
+        LOG.debug('cluster_heat cluster_restart')
+
+        cluster = objects.Cluster.get_by_uuid(context, cluster_uuid)
+
+        osc = clients.OpenStackClients(context)
+        stack = osc.heat().stacks.get(cluster.stack_id)
+        allow_update_status = (
+            fields.ClusterStatus.CREATE_COMPLETE,
+            fields.ClusterStatus.UPDATE_COMPLETE,
+            fields.ClusterStatus.RESUME_COMPLETE,
+            fields.ClusterStatus.RESTORE_COMPLETE,
+            fields.ClusterStatus.ROLLBACK_COMPLETE,
+            fields.ClusterStatus.SNAPSHOT_COMPLETE,
+            fields.ClusterStatus.CHECK_COMPLETE,
+            fields.ClusterStatus.ADOPT_COMPLETE
+        )
+        if stack.stack_status not in allow_update_status:
+            conductor_utils.notify_about_cluster_operation(
+                context, taxonomy.ACTION_UPDATE, taxonomy.OUTCOME_FAILURE)
+            operation = _('Restarting a cluster when stack status is '
+                          '"%s"') % stack.stack_status
+            raise exception.NotSupported(operation=operation)
+
+        conductor_utils.notify_about_cluster_operation(
+            context, taxonomy.ACTION_UPDATE, taxonomy.OUTCOME_PENDING)
+
+        restart_param_name = 'cluster_restart_param'
+        new_param_value = uuid.uuid4()
+        update_fields = {
+            'existing': True,
+            'parameters': {restart_param_name: new_param_value}
+        }
+        osc.heat().stacks.update(cluster.stack_id, **update_fields)
+
+        self._poll_and_check(osc, cluster)
 
     def _poll_and_check(self, osc, cluster):
         poller = HeatPoller(osc, cluster)

@@ -509,6 +509,88 @@ class TestHandler(db_base.DbTestCase):
         self.assertEqual(
             0, cert_manager.delete_certificates_from_cluster.call_count)
 
+    @patch('uuid.uuid4')
+    @patch('magnum.common.clients.OpenStackClients')
+    def _test_cluster_restart(self, status, mock_osc_class, mock_uuid4):
+        mock_heat_stack = mock.MagicMock()
+        mock_heat_stack.stack_status = status
+        mock_heat_client = mock.MagicMock()
+        mock_heat_client.stacks.get.return_value = mock_heat_stack
+        mock_openstack_client = mock_osc_class.return_value
+        mock_openstack_client.heat.return_value = mock_heat_client
+        mock_uuid4.return_value = 'mock_uuid'
+
+        self.handler.cluster_restart(self.context, self.cluster.uuid)
+
+        mock_heat_client.stacks.update.assert_called_once_with(
+            self.cluster.stack_id,
+            existing=True,
+            parameters={'cluster_restart_param': 'mock_uuid'})
+
+        notifications = fake_notifier.NOTIFICATIONS
+        self.assertEqual(1, len(notifications))
+        self.assertEqual(
+            'magnum.cluster.update', notifications[0].event_type)
+        self.assertEqual(
+            taxonomy.OUTCOME_PENDING, notifications[0].payload['outcome'])
+
+    def test_cluster_restart_create_complete(self):
+        self._test_cluster_restart(cluster_status.CREATE_COMPLETE)
+
+    def test_cluster_restart_update_complete(self):
+        self._test_cluster_restart(cluster_status.UPDATE_COMPLETE)
+
+    def test_cluster_restart_resume_complete(self):
+        self._test_cluster_restart(cluster_status.RESUME_COMPLETE)
+
+    def test_cluster_restart_restore_complete(self):
+        self._test_cluster_restart(cluster_status.RESTORE_COMPLETE)
+
+    def test_cluster_restart_rollback_complete(self):
+        self._test_cluster_restart(cluster_status.ROLLBACK_COMPLETE)
+
+    def test_cluster_restart_snapshot_complete(self):
+        self._test_cluster_restart(cluster_status.SNAPSHOT_COMPLETE)
+
+    def test_cluster_restart_check_complete(self):
+        self._test_cluster_restart(cluster_status.CHECK_COMPLETE)
+
+    def test_cluster_restart_adopt_complete(self):
+        self._test_cluster_restart(cluster_status.ADOPT_COMPLETE)
+
+    @patch('magnum.common.clients.OpenStackClients')
+    def _test_cluster_restart_negative(self, status, mock_osc_class):
+        mock_heat_stack = mock.MagicMock()
+        mock_heat_stack.stack_status = status
+        mock_heat_client = mock.MagicMock()
+        mock_heat_client.stacks.get.return_value = mock_heat_stack
+        mock_openstack_client = mock_osc_class.return_value
+        mock_openstack_client.heat.return_value = mock_heat_client
+
+        self.assertRaises(exception.NotSupported, self.handler.cluster_restart,
+                          self.context, self.cluster.uuid)
+
+        mock_heat_client.stacks.update.assert_not_called()
+
+        notifications = fake_notifier.NOTIFICATIONS
+        self.assertEqual(1, len(notifications))
+        self.assertEqual(
+            'magnum.cluster.update', notifications[0].event_type)
+        self.assertEqual(
+            taxonomy.OUTCOME_FAILURE, notifications[0].payload['outcome'])
+
+    def test_cluster_restart_failure_create_in_progress(self):
+        self._test_cluster_restart_negative(cluster_status.CREATE_IN_PROGRESS)
+
+    def test_cluster_restart_failure_create_failed(self):
+        self._test_cluster_restart_negative(cluster_status.CREATE_FAILED)
+
+    def test_cluster_restart_failure_update_in_progress(self):
+        self._test_cluster_restart_negative(cluster_status.UPDATE_IN_PROGRESS)
+
+    def test_cluster_restart_failure_delete_in_progress(self):
+        self._test_cluster_restart_negative(cluster_status.DELETE_IN_PROGRESS)
+
 
 class TestHeatPoller(base.TestCase):
 

@@ -49,6 +49,9 @@ class API(rpc_service.API):
     def cluster_update_async(self, cluster, rollback=False):
         self._cast('cluster_update', cluster=cluster, rollback=rollback)
 
+    def cluster_restart(self, uuid):
+        return self._call('cluster_restart', cluster_uuid=uuid)
+
     # CA operations
 
     def sign_certificate(self, cluster, certificate):

@@ -78,8 +78,8 @@ elif [ "${coe}${special}" = "k8s-ironic" ]; then
     export DEVSTACK_LOCAL_CONFIG+=$'\n'"IRONIC_VM_SPECS_DISK=10"
     export DEVSTACK_LOCAL_CONFIG+=$'\n'"IRONIC_VM_EPHEMERAL_DISK=5"
 else
-    export DEVSTACK_LOCAL_CONFIG+=$'\n'"MAGNUM_GUEST_IMAGE_URL='http://tarballs.openstack.org/magnum/images/fedora-atomic-f23-dib.qcow2'"
-    export DEVSTACK_LOCAL_CONFIG+=$'\n'"MAGNUM_IMAGE_NAME='fedora-atomic-f23-dib'"
+    export DEVSTACK_LOCAL_CONFIG+=$'\n'"MAGNUM_GUEST_IMAGE_URL='https://test-fedora-23-ironic-image.web.cern.ch/test-fedora-23-ironic-image/fedora-atomic-23-drago.qcow2'"
+    export DEVSTACK_LOCAL_CONFIG+=$'\n'"MAGNUM_IMAGE_NAME='fedora-atomic-23-drago'"
 fi
 
 # Enable magnum plugin in the last step

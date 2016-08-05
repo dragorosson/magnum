@@ -183,6 +183,14 @@ parameters:
     type: string
     description: insecure registry url
 
+  cluster_restart_param:
+    default: ''
+    type: string
+    description: >
+      Supplying a new value to this parameter during a stack update will
+      cause the software deployment resources that restart the COE service to
+      run.
+
 resources:
 
   master_wait_handle:
@@ -361,6 +369,12 @@ resources:
       group: ungrouped
       config: {get_file: ../../common/templates/kubernetes/fragments/add-proxy.sh}
 
+  start_container_agent:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      group: ungrouped
+      config: {get_file: fragments/start-container-agent.sh}
+
   kube_master_init:
     type: OS::Heat::MultipartMime
     properties:
@@ -382,7 +396,31 @@ resources:
         - config: {get_resource: enable_kube_proxy}
         - config: {get_resource: kube_ui_service}
         - config: {get_resource: kube_examples}
+        - config: {get_resource: start_container_agent}
         - config: {get_resource: master_wc_notify}
+
+  ######################################################################
+  #
+  # Software config resources to support cluster lifecycle operations
+  #
+
+  restart_cluster:
+    type: OS::Heat::SoftwareConfig
+    properties:
+      group: script
+      config: |
+        #!/bin/sh
+        systemctl restart kube-apiserver kubelet
+
+  restart_cluster_deployment:
+    type: OS::Heat::SoftwareDeployment
+    properties:
+      signal_transport: HEAT_SIGNAL
+      config: {get_resource: restart_cluster}
+      server: {get_resource: kube_master}
+      actions: ['UPDATE']
+      input_values:
+        cluster_restart_param: {get_param: cluster_restart_param}
 
   ######################################################################
   #
@@ -395,7 +433,8 @@ resources:
       image: {get_param: server_image}
       flavor: {get_param: master_flavor}
       key_name: {get_param: ssh_key_name}
-      user_data_format: RAW
+      user_data_format: SOFTWARE_CONFIG
+      software_config_transport: POLL_SERVER_HEAT
       user_data: {get_resource: kube_master_init}
       networks:
         - port: {get_resource: kube_master_eth0}
